@@ -1,0 +1,29 @@
+[package]
+name = "mediathekviewweb"
+version = "0.1.0"
+edition = "2021"
+description = "Client for the MediathekViewWeb API"
+repository = "https://github.com/d-k-bo/mediathekviewweb-rs"
+authors = ["d-k-bo <d-k-bo@mailbox.org>"]
+license = "MIT"
+categories = ["api-bindings"]
+keywords = ["mediathek", "mediathekview", "mediathekviewweb", "ard", "zdf"]
+
+[features]
+default = ["native-tls"]
+# Enable the `native-tls` feature on reqwest
+native-tls = ["reqwest/native-tls"]
+# Enable the `rustls-tls` feature on reqwest
+rustls-tls = ["reqwest/rustls-tls"]
+
+[dependencies]
+reqwest = { version = "0.11.22", default-features = false, features = ["json"] }
+serde = { version = "1.0.188", features = ["derive"] }
+
+[dev-dependencies]
+tokio = { version = "1.32.0", features = ["macros", "rt"] }
+
+# see https://stackoverflow.com/a/61417700/14750360
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

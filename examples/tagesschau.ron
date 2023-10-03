@@ -1,0 +1,46 @@
+QueryResult {
+    query_info: QueryInfo {
+        filmliste_timestamp: 1696361700,
+        result_count: 2,
+        search_engine_time: 4.389999866s,
+        total_results: 61,
+    },
+    results: [
+        Item {
+            channel: "ARD",
+            topic: "tagesschau",
+            title: "tagesschau 20:00 Uhr",
+            description: "Bundespräsident Steinmeier sieht das Verhältnis zwischen Ost- und Westdeutschland immer noch im Ungleichgewicht, Deutsche haben unterschiedliche Wahrnehmungen zum Verhältnis zwischen Ost und West, Bundesweite Proteste der niedergelassenen Ärzte gegen die Gesundheitspolitik der Ampel-Regierung, Medizin-Nobelpreis geht an zwei Wissenschaftler für die Grundlagenforschung von mRNA-Impfstoffen, EU-Auße\n.....",
+            timestamp: 1696269600,
+            duration: 932s,
+            size: Some(
+                137363456,
+            ),
+            url_website: "https://www.ardmediathek.de/video/Y3JpZDovL3RhZ2Vzc2NoYXUuZGUvNzU4ZjUyY2MtZjVjZi00YTY5LTkwYjYtOGFmNzQ3NTg0YjdiLVNFTkRVTkdTVklERU8",
+            url_subtitle: "https://api.ardmediathek.de/player-service/subtitle/ebutt/urn:ard:subtitle:60081680962eed32",
+            url_video: "https://media.tagesschau.de/video/2023/1002/TV-20231002-2020-4700.webl.h264.mp4",
+            url_video_low: "https://media.tagesschau.de/video/2023/1002/TV-20231002-2020-4700.webm.h264.mp4",
+            url_video_hd: "https://media.tagesschau.de/video/2023/1002/TV-20231002-2020-4700.webxxl.h264.mp4",
+            filmliste_timestamp: 1696339020,
+            id: "DCeoosOJEZLg30zx2pxtMQPBv4oBQnc+XEZf6LHOtC0=",
+        },
+        Item {
+            channel: "ARD",
+            topic: "tagesschau (mit Gebärdensprache)",
+            title: "tagesschau mit Gebärdensprache 20:00 Uhr",
+            description: "Hinweis:\r\nDer Beitrag zum Thema \"Fußball-Bundesliga\" darf aus rechtlichen Gründen nicht auf tagesschau.de gezeigt werden.",
+            timestamp: 1696185467,
+            duration: 899s,
+            size: Some(
+                130023424,
+            ),
+            url_website: "https://www.ardmediathek.de/video/Y3JpZDovL3RhZ2Vzc2NoYXUuZGUvOWYyNjhmMDgtNTkwZC00MGZhLWEzOWYtYTk1YTEzYWY2ODNlX2dhbnplU2VuZHVuZw",
+            url_subtitle: "",
+            url_video: "https://media.tagesschau.de/video/2023/1001/TV-20231001-2024-3000.webl.h264.mp4",
+            url_video_low: "https://media.tagesschau.de/video/2023/1001/TV-20231001-2024-3000.webm.h264.mp4",
+            url_video_hd: "https://media.tagesschau.de/video/2023/1001/TV-20231001-2024-3000.webxxl.h264.mp4",
+            filmliste_timestamp: 1696339020,
+            id: "C003uAa0qbUhVcRslrogZRGNWE2LdtunQJSPfcwuI/g=",
+        },
+    ],
+}
