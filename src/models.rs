@@ -71,8 +71,8 @@ pub struct Item {
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryResult {
-    query_info: QueryInfo,
-    results: Vec<Item>,
+    pub query_info: QueryInfo,
+    pub results: Vec<Item>,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
