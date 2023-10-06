@@ -78,7 +78,6 @@ pub struct QueryResult {
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryInfo {
-    #[serde(with = "tostring_fromstr")]
     pub filmliste_timestamp: u64,
     pub result_count: usize,
     #[serde(with = "duration_millisecs")]

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Replace `Error::cause` with `Error::source`
+- Change `QueryInfo` deserialization to adapt to upstream changes
 
 ## [0.1.1] - 2023-10-04
 
