@@ -53,16 +53,20 @@ pub struct Item {
     pub channel: String,
     pub topic: String,
     pub title: String,
-    pub description: String,
+    #[serde(deserialize_with = "empty_string_as_none")]
+    pub description: Option<String>,
     pub timestamp: i64,
     #[serde(with = "duration_secs")]
     pub duration: Duration,
     pub size: Option<usize>,
     pub url_website: String,
-    pub url_subtitle: String,
+    #[serde(deserialize_with = "empty_string_as_none")]
+    pub url_subtitle: Option<String>,
     pub url_video: String,
-    pub url_video_low: String,
-    pub url_video_hd: String,
+    #[serde(deserialize_with = "empty_string_as_none")]
+    pub url_video_low: Option<String>,
+    #[serde(deserialize_with = "empty_string_as_none")]
+    pub url_video_hd: Option<String>,
     #[serde(with = "timestamp", rename = "filmlisteTimestamp")]
     pub filmliste_timestamp: i64,
     pub id: String,
@@ -201,5 +205,17 @@ mod timestamp {
         }
 
         deserializer.deserialize_any(TimestampVisitor)
+    }
+}
+
+pub fn empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::de::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    if s.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(s))
     }
 }
