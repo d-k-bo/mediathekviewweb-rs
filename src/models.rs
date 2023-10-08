@@ -63,7 +63,7 @@ pub struct Item {
     pub url_video: String,
     pub url_video_low: String,
     pub url_video_hd: String,
-    #[serde(with = "tostring_fromstr", rename = "filmlisteTimestamp")]
+    #[serde(with = "timestamp", rename = "filmlisteTimestamp")]
     pub filmliste_timestamp: i64,
     pub id: String,
 }
@@ -78,6 +78,7 @@ pub struct QueryResult {
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryInfo {
+    #[serde(with = "timestamp")]
     pub filmliste_timestamp: i64,
     pub result_count: usize,
     #[serde(with = "duration_millisecs")]
@@ -160,25 +161,45 @@ mod duration_secs {
     }
 }
 
-mod tostring_fromstr {
-    use std::{fmt::Display, str::FromStr};
+mod timestamp {
+    use serde::{Deserializer, Serialize, Serializer};
 
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(value: &i64, serializer: S) -> Result<S::Ok, S::Error>
     where
-        T: ToString,
         S: Serializer,
     {
-        value.to_string().serialize(serializer)
+        value.serialize(serializer)
     }
 
-    pub fn deserialize<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<i64, D::Error>
     where
-        T: FromStr,
-        T::Err: Display,
         D: Deserializer<'de>,
     {
-        <&str>::deserialize(deserializer).and_then(|s| s.parse().map_err(serde::de::Error::custom))
+        struct TimestampVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for TimestampVisitor {
+            type Value = i64;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(
+                    formatter,
+                    "an integer or string that can be parsed as an integer"
+                )
+            }
+
+            fn visit_i64<E: serde::de::Error>(self, n: i64) -> Result<Self::Value, E> {
+                Ok(n)
+            }
+
+            fn visit_u64<E: serde::de::Error>(self, n: u64) -> Result<Self::Value, E> {
+                n.try_into().map_err(serde::de::Error::custom)
+            }
+
+            fn visit_str<E: serde::de::Error>(self, s: &str) -> Result<Self::Value, E> {
+                s.parse().map_err(serde::de::Error::custom)
+            }
+        }
+
+        deserializer.deserialize_any(TimestampVisitor)
     }
 }
