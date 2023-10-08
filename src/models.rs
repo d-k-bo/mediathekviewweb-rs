@@ -54,7 +54,7 @@ pub struct Item {
     pub topic: String,
     pub title: String,
     pub description: String,
-    pub timestamp: u64,
+    pub timestamp: i64,
     #[serde(with = "duration_secs")]
     pub duration: Duration,
     pub size: Option<usize>,
@@ -64,7 +64,7 @@ pub struct Item {
     pub url_video_low: String,
     pub url_video_hd: String,
     #[serde(with = "tostring_fromstr", rename = "filmlisteTimestamp")]
-    pub filmliste_timestamp: u64,
+    pub filmliste_timestamp: i64,
     pub id: String,
 }
 
@@ -78,7 +78,7 @@ pub struct QueryResult {
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryInfo {
-    pub filmliste_timestamp: u64,
+    pub filmliste_timestamp: i64,
     pub result_count: usize,
     #[serde(with = "duration_millisecs")]
     pub search_engine_time: Duration,
