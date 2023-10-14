@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- BREAKING: use `i64`for timestamps
+- Make timestamp parsing more resilient by accepting both strings and integers
+- BREAKING: Deserialize maybe-empty strings as `Option<String>`
+
 ## [0.1.2] - 2023-10-06
 
 ### Fixed
