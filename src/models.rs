@@ -23,7 +23,7 @@ pub enum QueryField {
     Channel,
 }
 impl QueryField {
-    pub const ALL: &[QueryField] = &[
+    pub const ALL: &'static [QueryField] = &[
         QueryField::Topic,
         QueryField::Title,
         QueryField::Description,
