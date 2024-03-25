@@ -17,11 +17,11 @@ native-tls = ["reqwest/native-tls"]
 rustls-tls = ["reqwest/rustls-tls"]
 
 [dependencies]
-reqwest = { version = "0.11.22", default-features = false, features = ["json"] }
-serde = { version = "1.0.188", features = ["derive"] }
+reqwest = { version = "0.12.2", default-features = false, features = ["json"] }
+serde = { version = "1.0.197", features = ["derive"] }
 
 [dev-dependencies]
-tokio = { version = "1.32.0", features = ["macros", "rt"] }
+tokio = { version = "1.36.0", features = ["macros", "rt"] }
 
 # see https://stackoverflow.com/a/61417700/14750360
 [package.metadata.docs.rs]
