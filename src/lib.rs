@@ -103,15 +103,21 @@ impl Mediathek {
         fields: impl Into<Vec<QueryField>>,
         query: impl Into<String>,
     ) -> MediathekQueryBuilder<'_> {
-        MediathekQueryBuilder::new(self, fields, query)
+        MediathekQueryBuilder::new(self).query(fields, query)
+    }
+    /// Query the current media database by parsing a query string using
+    /// [MediathekViewWeb's advanced search syntax](https://github.com/mediathekview/mediathekviewweb/blob/master/README.md#erweiterte-suche).
+    pub fn query_string(&self, query: &str, search_everywhere: bool) -> MediathekQueryBuilder<'_> {
+        MediathekQueryBuilder {
+            client: self,
+            query: MediathekQuery::from_search_string(query, search_everywhere),
+        }
     }
 }
 
-/// Request builder for the `/api/query` endpoint.
-#[derive(Debug, Serialize)]
-pub struct MediathekQueryBuilder<'client> {
-    #[serde(skip)]
-    client: &'client Mediathek,
+#[derive(Debug, Default, Serialize)]
+#[cfg_attr(test, derive(PartialEq))]
+struct MediathekQuery {
     queries: Vec<Query>,
     #[serde(skip_serializing_if = "Option::is_none")]
     duration_min: Option<u64>,
@@ -128,36 +134,80 @@ pub struct MediathekQueryBuilder<'client> {
     #[serde(skip_serializing_if = "Option::is_none")]
     offset: Option<usize>,
 }
+
+impl MediathekQuery {
+    fn from_search_string(s: &str, search_everywhere: bool) -> Self {
+        let mut query = Self::default();
+
+        for part in s.split_whitespace() {
+            if let Some(channel) = part.strip_prefix('!') {
+                query.queries.push(Query {
+                    fields: vec![QueryField::Channel],
+                    query: channel.replace(',', " "),
+                })
+            } else if let Some(topic) = part.strip_prefix('#') {
+                query.queries.push(Query {
+                    fields: vec![QueryField::Topic],
+                    query: topic.replace(',', " "),
+                })
+            } else if let Some(title) = part.strip_prefix('+') {
+                query.queries.push(Query {
+                    fields: vec![QueryField::Title],
+                    query: title.replace(',', " "),
+                })
+            } else if let Some(description) = part.strip_prefix('*') {
+                query.queries.push(Query {
+                    fields: vec![QueryField::Description],
+                    query: description.replace(',', " "),
+                })
+            } else if let Some(duration_min) = part.strip_prefix('>').and_then(|s| s.parse().ok()) {
+                query.duration_min = Some(duration_min)
+            } else if let Some(duration_max) = part.strip_prefix('<').and_then(|s| s.parse().ok()) {
+                query.duration_max = Some(duration_max)
+            } else {
+                let fields = if search_everywhere {
+                    vec![
+                        QueryField::Channel,
+                        QueryField::Topic,
+                        QueryField::Title,
+                        QueryField::Description,
+                    ]
+                } else {
+                    vec![QueryField::Topic, QueryField::Title]
+                };
+                query.queries.push(Query {
+                    fields,
+                    query: s.to_owned(),
+                })
+            }
+        }
+
+        query
+    }
+}
+
+/// Request builder for the `/api/query` endpoint.
+#[derive(Debug)]
+pub struct MediathekQueryBuilder<'client> {
+    client: &'client Mediathek,
+    query: MediathekQuery,
+}
 impl<'client> MediathekQueryBuilder<'client> {
-    fn new(
-        client: &'client Mediathek,
-        fields: impl Into<Vec<QueryField>>,
-        query: impl Into<String>,
-    ) -> Self {
-        MediathekQueryBuilder {
+    fn new(client: &'client Mediathek) -> Self {
+        Self {
             client,
-            queries: vec![Query {
-                fields: fields.into(),
-                query: query.into(),
-            }],
-            duration_min: None,
-            duration_max: None,
-            future: None,
-            sort_by: None,
-            sort_order: None,
-            size: None,
-            offset: None,
+            query: MediathekQuery::default(),
         }
     }
 }
-impl MediathekQueryBuilder<'_> {
+impl<'client> MediathekQueryBuilder<'client> {
     /// Add an additional search query.
     ///
     /// Multiple queries are combined using a logical `AND`.
     ///
     /// `fields` describes the fields in which should be searched for `query`.
     pub fn query(mut self, fields: impl Into<Vec<QueryField>>, query: impl Into<String>) -> Self {
-        self.queries.push(Query {
+        self.query.queries.push(Query {
             fields: fields.into(),
             query: query.into(),
         });
@@ -165,41 +215,41 @@ impl MediathekQueryBuilder<'_> {
     }
     /// Filter for a minimum duration.
     pub fn duration_min(mut self, duration_min: impl Into<Duration>) -> Self {
-        self.duration_min = Some(duration_min.into().as_secs());
+        self.query.duration_min = Some(duration_min.into().as_secs());
         self
     }
     /// Filter for a maximum duration.
     pub fn duration_max(mut self, duration_max: impl Into<Duration>) -> Self {
-        self.duration_max = Some(duration_max.into().as_secs());
+        self.query.duration_max = Some(duration_max.into().as_secs());
         self
     }
     /// Include media with a broadcasting date in the future.
     pub fn include_future(mut self, include_future: bool) -> Self {
-        self.future = Some(include_future);
+        self.query.future = Some(include_future);
         self
     }
     /// Sort the results by a specific field.
     pub fn sort_by(mut self, sort_by: SortField) -> Self {
-        self.sort_by = Some(sort_by);
+        self.query.sort_by = Some(sort_by);
         self
     }
     /// Set the sort order.
     pub fn sort_order(mut self, sort_order: SortOrder) -> Self {
-        self.sort_order = Some(sort_order);
+        self.query.sort_order = Some(sort_order);
         self
     }
     /// Set the count of results to retrieve.
     ///
     /// Can be used for pagination.
     pub fn size(mut self, size: usize) -> Self {
-        self.size = Some(size);
+        self.query.size = Some(size);
         self
     }
     /// Skip the specified count of items.
     ///
     /// Can be used for pagination.
     pub fn offset(mut self, offset: usize) -> Self {
-        self.offset = Some(offset);
+        self.query.offset = Some(offset);
         self
     }
 }
@@ -217,7 +267,7 @@ impl MediathekQueryBuilder<'_> {
             ))
             // https://github.com/mediathekview/mediathekviewweb/issues/145#issuecomment-555054562
             .header(reqwest::header::CONTENT_TYPE, "text/plain")
-            .json(&self)
+            .json(&self.query)
             .send()
             .await?
             .error_for_status()?
@@ -232,5 +282,155 @@ impl<'client> IntoFuture for MediathekQueryBuilder<'client> {
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(self.send())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        models::{Query, QueryField},
+        MediathekQuery,
+    };
+
+    #[test]
+    fn test_search_string() {
+        assert_eq!(
+            MediathekQuery::from_search_string("!ard", false),
+            MediathekQuery {
+                queries: vec![Query {
+                    fields: vec![QueryField::Channel],
+                    query: "ard".into()
+                }],
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            MediathekQuery::from_search_string("+gebärdensprache", false),
+            MediathekQuery {
+                queries: vec![Query {
+                    fields: vec![QueryField::Title],
+                    query: "gebärdensprache".into()
+                }],
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            MediathekQuery::from_search_string("*norwegen", false),
+            MediathekQuery {
+                queries: vec![Query {
+                    fields: vec![QueryField::Description],
+                    query: "norwegen".into()
+                }],
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            MediathekQuery::from_search_string("!ard #wetter", false),
+            MediathekQuery {
+                queries: vec![
+                    Query {
+                        fields: vec![QueryField::Channel],
+                        query: "ard".into()
+                    },
+                    Query {
+                        fields: vec![QueryField::Topic],
+                        query: "wetter".into()
+                    }
+                ],
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            MediathekQuery::from_search_string(">60", false),
+            MediathekQuery {
+                duration_min: Some(60),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            MediathekQuery::from_search_string("*diane,kruger", false),
+            MediathekQuery {
+                queries: vec![Query {
+                    fields: vec![QueryField::Description],
+                    query: "diane kruger".into()
+                }],
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            MediathekQuery::from_search_string("!ard !ndr #sturm,der,liebe #rote,rosen", false),
+            MediathekQuery {
+                queries: vec![
+                    Query {
+                        fields: vec![QueryField::Channel],
+                        query: "ard".into()
+                    },
+                    Query {
+                        fields: vec![QueryField::Channel],
+                        query: "ndr".into()
+                    },
+                    Query {
+                        fields: vec![QueryField::Topic],
+                        query: "sturm der liebe".into()
+                    },
+                    Query {
+                        fields: vec![QueryField::Topic],
+                        query: "rote rosen".into()
+                    }
+                ],
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            MediathekQuery::from_search_string("!ard !ndr #sturm,der,liebe #rote,rosen", false),
+            MediathekQuery {
+                queries: vec![
+                    Query {
+                        fields: vec![QueryField::Channel],
+                        query: "ard".into()
+                    },
+                    Query {
+                        fields: vec![QueryField::Channel],
+                        query: "ndr".into()
+                    },
+                    Query {
+                        fields: vec![QueryField::Topic],
+                        query: "sturm der liebe".into()
+                    },
+                    Query {
+                        fields: vec![QueryField::Topic],
+                        query: "rote rosen".into()
+                    }
+                ],
+                ..Default::default()
+            }
+        );
+
+        assert_eq!(
+            MediathekQuery::from_search_string("test", false),
+            MediathekQuery {
+                queries: vec![Query {
+                    fields: vec![QueryField::Topic, QueryField::Title],
+                    query: "test".into()
+                },],
+                ..Default::default()
+            }
+        );
+
+        assert_eq!(
+            MediathekQuery::from_search_string("test", true),
+            MediathekQuery {
+                queries: vec![Query {
+                    fields: vec![
+                        QueryField::Channel,
+                        QueryField::Topic,
+                        QueryField::Title,
+                        QueryField::Description
+                    ],
+                    query: "test".into()
+                },],
+                ..Default::default()
+            }
+        );
     }
 }
