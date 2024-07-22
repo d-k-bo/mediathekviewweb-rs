@@ -56,8 +56,8 @@ pub struct Item {
     #[serde(deserialize_with = "empty_string_as_none")]
     pub description: Option<String>,
     pub timestamp: i64,
-    #[serde(with = "duration_secs")]
-    pub duration: Duration,
+    #[serde(with = "optional_duration_secs")]
+    pub duration: Option<Duration>,
     pub size: Option<usize>,
     pub url_website: String,
     #[serde(deserialize_with = "empty_string_as_none")]
@@ -145,23 +145,55 @@ mod duration_millisecs {
     }
 }
 
-mod duration_secs {
+mod optional_duration_secs {
     use std::time::Duration;
 
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserializer, Serialize, Serializer};
 
-    pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(duration: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        duration.as_secs().serialize(serializer)
+        duration
+            .as_ref()
+            .map(Duration::as_secs)
+            .serialize(serializer)
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        <u64>::deserialize(deserializer).map(Duration::from_secs)
+        struct OptionalDurationVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for OptionalDurationVisitor {
+            type Value = Option<Duration>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(formatter, "an integer or an empty string")
+            }
+
+            fn visit_u64<E: serde::de::Error>(self, n: u64) -> Result<Self::Value, E> {
+                Ok(Some(Duration::from_secs(n)))
+            }
+
+            fn visit_none<E>(self) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(None)
+            }
+
+            fn visit_str<E: serde::de::Error>(self, s: &str) -> Result<Self::Value, E> {
+                if s.is_empty() {
+                    Ok(None)
+                } else {
+                    Err(E::custom("string is not empty"))
+                }
+            }
+        }
+
+        deserializer.deserialize_any(OptionalDurationVisitor)
     }
 }
 

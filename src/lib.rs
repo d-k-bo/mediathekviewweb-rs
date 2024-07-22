@@ -289,7 +289,7 @@ impl<'client> IntoFuture for MediathekQueryBuilder<'client> {
 mod tests {
     use crate::{
         models::{Query, QueryField},
-        MediathekQuery,
+        Mediathek, MediathekQuery,
     };
 
     #[test]
@@ -432,5 +432,25 @@ mod tests {
                 ..Default::default()
             }
         );
+    }
+
+    #[tokio::test]
+    async fn test_query() -> Result<(), Box<dyn std::error::Error>> {
+        let mediathek = Mediathek::new(
+            format!(
+                "{} Test Suite ({})",
+                env!("CARGO_PKG_NAME"),
+                env!("CARGO_PKG_REPOSITORY")
+            )
+            .parse()
+            .unwrap(),
+        )?;
+
+        mediathek.query([QueryField::Topic], "tagesschau").await?;
+
+        // livestreams return `""` as the duration
+        mediathek.query([QueryField::Topic], "livestream").await?;
+
+        Ok(())
     }
 }

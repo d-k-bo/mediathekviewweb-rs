@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- BREAKING: change `duration` from `Duration` to `Option<Duration>` because some entries (e.g. livestreams) don't have a duration 
+
 ## [0.3.1] - 2024-05-23
 
 ### Added
