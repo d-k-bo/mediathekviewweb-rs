@@ -224,7 +224,7 @@ impl<'client> MediathekQueryBuilder<'client> {
         }
     }
 }
-impl<'client> MediathekQueryBuilder<'client> {
+impl MediathekQueryBuilder<'_> {
     /// Add an additional search query.
     ///
     /// Multiple queries are combined using a logical `AND`.

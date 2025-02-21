@@ -166,7 +166,7 @@ mod optional_duration_secs {
     {
         struct OptionalDurationVisitor;
 
-        impl<'de> serde::de::Visitor<'de> for OptionalDurationVisitor {
+        impl serde::de::Visitor<'_> for OptionalDurationVisitor {
             type Value = Option<Duration>;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -213,7 +213,7 @@ mod timestamp {
     {
         struct TimestampVisitor;
 
-        impl<'de> serde::de::Visitor<'de> for TimestampVisitor {
+        impl serde::de::Visitor<'_> for TimestampVisitor {
             type Value = i64;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
