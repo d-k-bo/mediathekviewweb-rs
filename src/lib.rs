@@ -119,10 +119,16 @@ impl Mediathek {
 #[cfg_attr(test, derive(PartialEq))]
 struct MediathekQuery {
     queries: Vec<Query>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    duration_min: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    duration_max: Option<u64>,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "duration_as_seconds"
+    )]
+    duration_min: Option<Duration>,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "duration_as_seconds"
+    )]
+    duration_max: Option<Duration>,
     #[serde(skip_serializing_if = "Option::is_none")]
     future: Option<bool>,
     #[serde(rename = "sortBy", skip_serializing_if = "Option::is_none")]
@@ -133,6 +139,16 @@ struct MediathekQuery {
     size: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     offset: Option<usize>,
+}
+
+fn duration_as_seconds<S: serde::Serializer>(
+    duration: &Option<Duration>,
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error> {
+    duration
+        .as_ref()
+        .map(Duration::as_secs)
+        .serialize(serializer)
 }
 
 impl MediathekQuery {
@@ -160,9 +176,17 @@ impl MediathekQuery {
                     fields: vec![QueryField::Description],
                     query: description.replace(',', " "),
                 })
-            } else if let Some(duration_min) = part.strip_prefix('>').and_then(|s| s.parse().ok()) {
+            } else if let Some(duration_min) = part
+                .strip_prefix('>')
+                .and_then(|s| s.parse().ok())
+                .map(|minutes: u64| Duration::from_secs(minutes * 60))
+            {
                 query.duration_min = Some(duration_min)
-            } else if let Some(duration_max) = part.strip_prefix('<').and_then(|s| s.parse().ok()) {
+            } else if let Some(duration_max) = part
+                .strip_prefix('<')
+                .and_then(|s| s.parse().ok())
+                .map(|minutes: u64| Duration::from_secs(minutes * 60))
+            {
                 query.duration_max = Some(duration_max)
             } else {
                 let fields = if search_everywhere {
@@ -215,12 +239,12 @@ impl<'client> MediathekQueryBuilder<'client> {
     }
     /// Filter for a minimum duration.
     pub fn duration_min(mut self, duration_min: impl Into<Duration>) -> Self {
-        self.query.duration_min = Some(duration_min.into().as_secs());
+        self.query.duration_min = Some(duration_min.into());
         self
     }
     /// Filter for a maximum duration.
     pub fn duration_max(mut self, duration_max: impl Into<Duration>) -> Self {
-        self.query.duration_max = Some(duration_max.into().as_secs());
+        self.query.duration_max = Some(duration_max.into());
         self
     }
     /// Include media with a broadcasting date in the future.
@@ -287,6 +311,8 @@ impl<'client> IntoFuture for MediathekQueryBuilder<'client> {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use crate::{
         models::{Query, QueryField},
         Mediathek, MediathekQuery,
@@ -343,7 +369,7 @@ mod tests {
         assert_eq!(
             MediathekQuery::from_search_string(">60", false),
             MediathekQuery {
-                duration_min: Some(60),
+                duration_min: Some(Duration::from_secs(60 * 60)),
                 ..Default::default()
             }
         );
@@ -450,6 +476,17 @@ mod tests {
 
         // livestreams return `""` as the duration
         mediathek.query([QueryField::Topic], "livestream").await?;
+
+        assert!(mediathek
+            .query_string("<60 >50", false)
+            .size(5)
+            .await?
+            .results
+            .into_iter()
+            .flat_map(|show| show.duration)
+            .all(|duration| {
+                duration >= Duration::from_secs(50 * 60) && duration <= Duration::from_secs(60 * 60)
+            }));
 
         Ok(())
     }

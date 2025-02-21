@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Parse min and max duration as minutes. They were incorrectly intepreted as seconds before ([#2](https://github.com/d-k-bo/mediathekviewweb-rs/issues/2))
+
 ## [0.4.0] - 2024-07-22
 
 ### Changed
